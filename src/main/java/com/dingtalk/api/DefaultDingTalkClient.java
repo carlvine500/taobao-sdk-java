@@ -144,13 +144,13 @@ public class DefaultDingTalkClient extends DefaultTaobaoClient implements DingTa
 			}
 
 			if("GET".equals(request.getTopHttpMethod())) {
-				data = WebV2Utils.doGet(fullUrl, appParams, connectTimeout, readTimeout);
+				data = WebV2Utils.doGet(fullUrl, appParams, connectTimeout, readTimeout,null,getProxy());
 			} else {
 				// 是否需要上传文件
 				if (request instanceof TaobaoUploadRequest) {
 					TaobaoUploadRequest<T> uRequest = (TaobaoUploadRequest<T>) request;
 					Map<String, FileItem> fileParams = TaobaoUtils.cleanupMap(uRequest.getFileParams());
-					data = WebV2Utils.doPost(fullUrl, appParams, fileParams, Constants.CHARSET_UTF8, connectTimeout, readTimeout, request.getHeaderMap());
+					data = WebV2Utils.doPost(fullUrl, appParams, fileParams, Constants.CHARSET_UTF8, connectTimeout, readTimeout, request.getHeaderMap(),getProxy());
 				} else {
 
 					Map<String, Object> jsonParams = new HashMap<String, Object>();
@@ -172,7 +172,7 @@ public class DefaultDingTalkClient extends DefaultTaobaoClient implements DingTa
 						}
 					}
 
-					data = WebV2Utils.doPostWithJson(fullUrl, jsonParams, Constants.CHARSET_UTF8, connectTimeout, readTimeout);
+					data = WebV2Utils.doPostWithJson(fullUrl, jsonParams, Constants.CHARSET_UTF8, connectTimeout, readTimeout,null,getProxy());
 				}
 			}
 			requestHolder.setResponseBody(data.getBody());

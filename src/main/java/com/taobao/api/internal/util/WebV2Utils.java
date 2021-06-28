@@ -18,7 +18,7 @@ import java.util.zip.GZIPInputStream;
 
 /**
  * 网络工具类。
- * 
+ *
  * @author carver.gu
  * @since 1.0, Sep 12, 2009
  */
@@ -29,13 +29,15 @@ public abstract class WebV2Utils {
 	private static boolean ignoreHostCheck = true; // 忽略HOST检查
 
 	public static class TrustAllTrustManager implements X509TrustManager {
+		@Override
 		public X509Certificate[] getAcceptedIssuers() {
 			return null;
 		}
 
+		@Override
 		public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
 		}
-
+		@Override
 		public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
 		}
 	}
@@ -74,6 +76,10 @@ public abstract class WebV2Utils {
 		return doPost(url, params, charset, connectTimeout, readTimeout, null, null);
 	}
 
+	public static HttpResponseData doPost(String url, Map<String, String> params, String charset, int connectTimeout, int readTimeout, Map<String, String> headerMap) throws IOException {
+		return doPost(url, params, charset, connectTimeout, readTimeout, headerMap, null);
+	}
+
 	public static HttpResponseData doPost(String url, Map<String, String> params, String charset, int connectTimeout, int readTimeout, Map<String, String> headerMap, Proxy proxy) throws IOException {
 		String ctype = "application/x-www-form-urlencoded;charset=" + charset;
 		String query = buildQuery(params, charset);
@@ -85,10 +91,10 @@ public abstract class WebV2Utils {
 	}
 
 	public static HttpResponseData doPost(String url, String apiBody, String charset, int connectTimeout, int readTimeout, Map<String, String> headerMap) throws IOException {
-        String ctype = "text/plain;charset=" + charset;
-        byte[] content = apiBody.getBytes(charset);
-        return _doPost(url, ctype, content, connectTimeout, readTimeout, headerMap, null);
-    }
+		String ctype = "text/plain;charset=" + charset;
+		byte[] content = apiBody.getBytes(charset);
+		return _doPost(url, ctype, content, connectTimeout, readTimeout, headerMap, null);
+	}
 
 	/**
 	 * 执行HTTP POST请求。
@@ -159,7 +165,7 @@ public abstract class WebV2Utils {
 	}
 
 	public static HttpResponseData doPost(String url, Map<String, String> params, Map<String, FileItem> fileParams, String charset, int connectTimeout, int readTimeout) throws IOException {
-		return doPost(url, params, fileParams, charset, connectTimeout, readTimeout, null);
+		return doPost(url, params, fileParams, charset, connectTimeout, readTimeout, null,null);
 	}
 
 	/**
@@ -172,9 +178,9 @@ public abstract class WebV2Utils {
 	 * @return 响应字符串
 	 */
 	public static HttpResponseData doPost(String url, Map<String, String> params, Map<String, FileItem> fileParams, String charset,
-			int connectTimeout, int readTimeout, Map<String, String> headerMap) throws IOException {
+										  int connectTimeout, int readTimeout, Map<String, String> headerMap,Proxy proxy) throws IOException {
 		if (fileParams == null || fileParams.isEmpty()) {
-			return doPost(url, params, charset, connectTimeout, readTimeout, headerMap, null);
+			return doPost(url, params, charset, connectTimeout, readTimeout, headerMap, proxy);
 		} else {
 			return _doPostWithFile(url, params, fileParams, charset, connectTimeout, readTimeout, headerMap);
 		}
@@ -192,7 +198,7 @@ public abstract class WebV2Utils {
 	 * @return
 	 * @throws IOException
 	 */
-	public static HttpResponseData doPostWithJson(String url, Map<String, Object> params, String charset, int connectTimeout, int readTimeout) throws IOException {
+	public static HttpResponseData doPostWithJson(String url, Map<String, Object> params, String charset, int connectTimeout, int readTimeout,Map<String, String> headerMap, Proxy proxy) throws IOException {
 		String ctype = "application/json;charset=" + charset;
 		byte[] content = {};
 
@@ -200,11 +206,11 @@ public abstract class WebV2Utils {
 		if (body != null) {
 			content = body.getBytes(charset);
 		}
-		return _doPost(url, ctype, content, connectTimeout, readTimeout, null, null);
+		return _doPost(url, ctype, content, connectTimeout, readTimeout, headerMap, proxy);
 	}
 
 	private static HttpResponseData _doPostWithFile(String url, Map<String, String> params, Map<String, FileItem> fileParams,
-			String charset, int connectTimeout, int readTimeout, Map<String, String> headerMap) throws IOException {
+													String charset, int connectTimeout, int readTimeout, Map<String, String> headerMap) throws IOException {
 		String boundary = String.valueOf(System.nanoTime()); // 随机分隔线
 		HttpURLConnection conn = null;
 		OutputStream out = null;
@@ -278,8 +284,8 @@ public abstract class WebV2Utils {
 		return entry.toString().getBytes(charset);
 	}
 
-	public static HttpResponseData doGet(String url, Map<String, String> params, int connectTimeout, int readTimeout) throws  IOException {
-		return doGet(url, params, DEFAULT_CHARSET, connectTimeout, readTimeout);
+	public static HttpResponseData doGet(String url, Map<String, String> params, int connectTimeout, int readTimeout, Map<String, String> headerMap, Proxy proxy) throws  IOException {
+		return doGet(url, params, DEFAULT_CHARSET, connectTimeout, readTimeout,headerMap,proxy);
 	}
 
 	/**
@@ -290,14 +296,14 @@ public abstract class WebV2Utils {
 	 * @param charset 字符集，如UTF-8, GBK, GB2312
 	 * @return 响应字符串
 	 */
-	public static HttpResponseData doGet(String url, Map<String, String> params, String charset, int connectTimeout, int readTimeout) throws IOException {
+	public static HttpResponseData doGet(String url, Map<String, String> params, String charset, int connectTimeout, int readTimeout, Map<String, String> headerMap, Proxy proxy) throws IOException {
 		HttpURLConnection conn = null;
 		String rsp = null;
 		HttpResponseData data = new HttpResponseData();
 		try {
 			String ctype = "application/x-www-form-urlencoded;charset=" + charset;
 			String query = buildQuery(params, charset);
-			conn = getConnection(buildGetUrl(url, query), Constants.METHOD_GET, ctype, null, null);
+			conn = getConnection(buildGetUrl(url, query), Constants.METHOD_GET, ctype, null, proxy);
 			conn.setConnectTimeout(connectTimeout);
 			conn.setReadTimeout(readTimeout);
 			rsp = getResponseAsString(conn);
@@ -350,18 +356,18 @@ public abstract class WebV2Utils {
 		conn.setDoInput(true);
 		conn.setDoOutput(true);
 		if(headerMap != null && headerMap.get(Constants.TOP_HTTP_DNS_HOST) != null){
-		    conn.setRequestProperty("Host", headerMap.get(Constants.TOP_HTTP_DNS_HOST));
+			conn.setRequestProperty("Host", headerMap.get(Constants.TOP_HTTP_DNS_HOST));
 		}else{
-		    conn.setRequestProperty("Host", url.getHost());
+			conn.setRequestProperty("Host", url.getHost());
 		}
 		conn.setRequestProperty("Accept", "text/xml,text/javascript");
 		conn.setRequestProperty("User-Agent", "top-sdk-java");
 		conn.setRequestProperty("Content-Type", ctype);
 		if (headerMap != null) {
 			for (Entry<String, String> entry : headerMap.entrySet()) {
-			    if(!Constants.TOP_HTTP_DNS_HOST.equals(entry.getKey())){
-			        conn.setRequestProperty(entry.getKey(), entry.getValue());
-			    }
+				if(!Constants.TOP_HTTP_DNS_HOST.equals(entry.getKey())){
+					conn.setRequestProperty(entry.getKey(), entry.getValue());
+				}
 			}
 		}
 		return conn;
@@ -383,7 +389,7 @@ public abstract class WebV2Utils {
 		StringBuilder newUrl = new StringBuilder(url);
 		boolean hasQuery = url.contains("?");
 		boolean hasPrepend = url.endsWith("?") || url.endsWith("&");
-		
+
 		for (String query : queries) {
 			if (!StringUtils.isEmpty(query)) {
 				if (!hasPrepend) {
@@ -493,7 +499,7 @@ public abstract class WebV2Utils {
 
 	/**
 	 * 使用默认的UTF-8字符集反编码请求参数值。
-	 * 
+	 *
 	 * @param value 参数值
 	 * @return 反编码后的参数值
 	 */
@@ -503,7 +509,7 @@ public abstract class WebV2Utils {
 
 	/**
 	 * 使用默认的UTF-8字符集编码请求参数值。
-	 * 
+	 *
 	 * @param value 参数值
 	 * @return 编码后的参数值
 	 */
@@ -513,7 +519,7 @@ public abstract class WebV2Utils {
 
 	/**
 	 * 使用指定的字符集反编码请求参数值。
-	 * 
+	 *
 	 * @param value 参数值
 	 * @param charset 字符集
 	 * @return 反编码后的参数值
@@ -532,7 +538,7 @@ public abstract class WebV2Utils {
 
 	/**
 	 * 使用指定的字符集编码请求参数值。
-	 * 
+	 *
 	 * @param value 参数值
 	 * @param charset 字符集
 	 * @return 编码后的参数值
@@ -551,7 +557,7 @@ public abstract class WebV2Utils {
 
 	/**
 	 * 从URL中提取所有的参数。
-	 * 
+	 *
 	 * @param query URL地址
 	 * @return 参数映射
 	 */

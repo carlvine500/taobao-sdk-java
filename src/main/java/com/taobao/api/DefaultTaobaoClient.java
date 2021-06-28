@@ -386,7 +386,7 @@ public class DefaultTaobaoClient implements TaobaoClient {
 			if (request.getRequestBase() != null && request.getRequestBase() instanceof TaobaoUploadRequest) {
 				TaobaoUploadRequest<?> uRequest = (TaobaoUploadRequest<?>) request.getRequestBase();
 				Map<String, FileItem> fileParams = TaobaoUtils.cleanupMap(uRequest.getFileParams());
-                data = WebV2Utils.doPost(fullUrl, appParams, fileParams, Constants.CHARSET_UTF8, connectTimeout, readTimeout, request.getHeaderMap());
+                data = WebV2Utils.doPost(fullUrl, appParams, fileParams, Constants.CHARSET_UTF8, connectTimeout, readTimeout, request.getHeaderMap(),getProxy());
 			} else {
 				byte[] bodyByte = apiBody == null ? new byte[0] : apiBody.getBytes(Constants.CHARSET_UTF8);
 				if(isJson){
